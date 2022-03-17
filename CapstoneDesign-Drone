@@ -1,0 +1,274 @@
+#include <Wire.h >
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+
+RF24 radio(7,8);
+const byte address[6] = "00001";
+double joystick[5];
+const double PITCH = 0.00;
+const double ROLL = 0.00;
+const double YAW = 0.00;
+
+void setup() {
+  Serial.begin(115200);
+  radio.begin();
+  radio.openReadingPipe(0, address);
+  radio.setPALevel(RF24_PA_MIN); // 거리가 먼 경우 GND와 3.3v에 바이패스 커패시터 사용 
+
+  radio.startListening();
+
+  Wire.begin();
+  Wire.setClock(400000);
+  
+  Wire.beginTransmission(0x68);
+  Wire.write(0x6b);
+  Wire.write(0x0);
+  Wire.endTransmission(true);
+}
+
+int throttle =0;
+void loop() {
+  Wire.beginTransmission(0x68);
+  Wire.write(0x43);
+  Wire.endTransmission(false);
+  Wire.requestFrom(0x68,6,true);
+  int16_t GyXH = Wire.read();  
+  int16_t GyXL = Wire.read();
+  int16_t GyYH = Wire.read();  
+  int16_t GyYL = Wire.read();
+  int16_t GyZH = Wire.read();  
+  int16_t GyZL = Wire.read();
+  int16_t GyX = GyXH <<8 |GyXL;
+  int16_t GyY = GyYH <<8 |GyYL;
+  int16_t GyZ = GyZH <<8 |GyZL;
+
+  static int32_t GyXSum =0, GyYSum =0, GyZSum =0;
+  static double GyXOff =0.0, GyYOff =0.0, GyZOff =0.0;
+  static int cnt_sample =1000;
+  if(cnt_sample >0) {
+  GyXSum += GyX, GyYSum += GyY, GyZSum += GyZ;
+  cnt_sample --;
+  if(cnt_sample ==0) {      
+    GyXOff = GyXSum /1000.0;      
+    GyYOff = GyYSum /1000.0;      
+    GyZOff = GyZSum /1000.0;
+  }
+  delay(1);
+  return;    
+  }
+  double GyXD = GyX - GyXOff;
+  double GyYD = GyY - GyYOff;
+  double GyZD = GyZ - GyZOff;
+  double GyXR = GyXD /131;
+  double GyYR = GyYD /131;
+  double GyZR = GyZD /131;
+
+  static unsigned long t_prev =0;
+  unsigned long t_now = micros();
+  double dt = (t_now - t_prev)/1000000.0;
+  t_prev = t_now;
+
+  static double AngleX =0.0, AngleY =0.0, AngleZ =0.0;
+  AngleX += GyXR *dt;
+  AngleY += GyYR *dt;
+  AngleZ += GyZR *dt;
+  if(throttle ==0) AngleX =AngleY =AngleZ =0.0;
+
+  static double tAngleX =0.0, tAngleY =0.0, tAngleZ =0.0;
+  double eAngleX = tAngleX - AngleX;
+  double eAngleY = tAngleY - AngleY;
+  double eAngleZ = tAngleZ - AngleZ;
+  double Kp =1.0;
+  double BalX = Kp *eAngleX;
+  double BalY = Kp *eAngleY;
+  double BalZ = Kp *eAngleZ;
+
+  double Kd =1.0;
+  BalX += Kd *-GyXR;
+  BalY += Kd *-GyYR;
+  BalZ += Kd *-GyZR;
+  if(throttle ==0) BalX =BalY =BalZ =0.0;
+
+  double Ki =1.0;
+  static double ResX =0.0, ResY =0.0, ResZ =0.0;
+  ResX += Ki *eAngleX *dt;
+  ResY += Ki *eAngleY *dt;
+  ResZ += Ki *eAngleZ *dt;  
+  if(throttle ==0) ResX =ResY =ResZ =0.0;
+  BalX += ResX;
+  BalY += ResY;
+  BalZ += ResX; 
+
+  if (radio.available()) {
+    radio.read(joystick, sizeof(joystick));
+    int b = joystick[4];
+    switch(b) {
+      case 0:
+        /*Serial.print("PITCH : ");
+        Serial.print(joystick[0]);
+        Serial.print(", ");
+        Serial.print("ROLL : ");
+        Serial.print(joystick[1]);
+        Serial.print(", ");
+        Serial.print(joystick[2]);
+        Serial.print("LAW : ");
+        Serial.println(joystick[3]);
+        Serial.print("Compass (Z) : ");
+        Serial.println(joystick[4]);*/
+        if ((joystick[0] - PITCH <= 10.00 && joystick[0] - PITCH >= -10.00)
+        && (joystick[1] - PITCH <= 10.00 && AngleY - PITCH >= -10.00)
+        && (joystick[2] - YAW <= 10.00 && joystick[2] - YAW >= -10.00)) {
+          Serial.println("analogWirte(6, 25)");
+          Serial.println("analogWirte(10, 25)");
+          Serial.println("analogWirte(9, 25)");
+          Serial.println("analogWirte(5, 25)");
+        }
+       else if (joystick[0] - PITCH >= -30.00 && joystick[0] - PITCH <= -10.00) {
+          Serial.println("analogWirte(6, 25)");
+          Serial.println("analogWirte(10, 25)");
+          Serial.println("analogWirte(9, 75)");
+          Serial.println("analogWirte(5, 75)");
+        }
+       else if (joystick[0] - PITCH >= -50.00 && joystick[0] - PITCH <= -30.00) {
+        Serial.println("analogWirte(6, 50)");
+          Serial.println("analogWirte(10, 50)");
+          Serial.println("analogWirte(9, 150)");
+          Serial.println("analogWirte(5, 150)");
+       }
+       else if (joystick[0] - PITCH >= -70.00 && joystick[0] - PITCH <= -50.00) {
+         Serial.println("analogWirte(6, 75)");
+          Serial.println("analogWirte(10, 75)");
+          Serial.println("analogWirte(9, 250)");
+          Serial.println("analogWirte(5, 250)");
+        }
+       else if (joystick[0] - PITCH <= 30.00 && joystick[0] - PITCH >= 10.00) {
+          Serial.println("analogWirte(6, 75)");
+          Serial.println("analogWirte(10, 75)");
+          Serial.println("analogWirte(9, 25)");
+          Serial.println("analogWirte(5, 25)");
+       }
+       else if (joystick[0] - PITCH <= 50.00 && joystick[0] - PITCH >= 30.00) {
+         Serial.println("analogWirte(6, 150)");
+          Serial.println("analogWirte(10, 150)");
+          Serial.println("analogWirte(9, 50)");
+          Serial.println("analogWirte(5, 50)");
+       }
+        else if (joystick[0] - PITCH <= 70.00 && joystick[0] - PITCH >= 50.00) {
+          Serial.println("analogWirte(6, 250)");
+          Serial.println("analogWirte(10, 250)");
+          Serial.println("analogWirte(9, 75)");
+          Serial.println("analogWirte(5, 75)");
+        } // 드론 앞 뒤 움직임 속도 제어
+
+        else if (joystick[1] - ROLL >= -30.00 && joystick[1] - ROLL <= -10.00) {
+         Serial.println("analogWirte(6, 25)");
+          Serial.println("analogWirte(10, 75)");
+          Serial.println("analogWirte(9, 75)");
+          Serial.println("analogWirte(5, 25)");
+        }
+        else if (joystick[1] - ROLL >= -50.00 && joystick[1] - ROLL <= -30.00) {
+          Serial.println("analogWirte(6, 50)");
+          Serial.println("analogWirte(10, 150)");
+          Serial.println("analogWirte(9, 150)");
+          Serial.println("analogWirte(5, 50)");
+       }
+        else if (joystick[1] - ROLL >= -70.00 && joystick[1] - ROLL <= -50.00) {
+          Serial.println("analogWirte(6, 75)");
+          Serial.println("analogWirte(10, 250)");
+          Serial.println("analogWirte(9, 250)");
+          Serial.println("analogWirte(5, 75)");
+       }
+        else if (joystick[1] - ROLL <= 30.00 && joystick[1] - ROLL >= 10.00) {
+         Serial.println("analogWirte(6, 75)");
+          Serial.println("analogWirte(10, 25)");
+          Serial.println("analogWirte(9, 25)");
+          Serial.println("analogWirte(5, 75)");
+       }
+        else if (joystick[1] - ROLL <= 50.00 && joystick[1] - ROLL >= 30.00) {
+          Serial.println("analogWirte(6, 150)");
+          Serial.println("analogWirte(10, 50)");
+          Serial.println("analogWirte(9, 50)");
+          Serial.println("analogWirte(5, 150)");
+       }
+        else if (joystick[1] - ROLL <= 70.00 && joystick[1] - ROLL >= 50.00) {
+          Serial.println("analogWirte(6, 250)");
+          Serial.println("analogWirte(10, 75)");
+          Serial.println("analogWirte(9, 75)");
+          Serial.println("analogWirte(5, 250)");
+        } // 드론 좌 우 움직임 속도 제어
+
+       else if (joystick[2] - YAW >= -30.00 && joystick[2] - YAW <= -10.00) {
+          Serial.println("analogWirte(6, 75)");
+          Serial.println("analogWirte(10, 25)");
+          Serial.println("analogWirte(9, 75)");
+          Serial.println("analogWirte(5, 25)");
+       }
+       else if (joystick[2] - YAW >= -50.00 && joystick[2] - YAW <= -30.00) {
+         Serial.println("analogWirte(6, 150)");
+          Serial.println("analogWirte(10, 50)");
+          Serial.println("analogWirte(9, 150)");
+          Serial.println("analogWirte(5, 50)");
+       }
+       else if (joystick[2] - YAW >= -70.00 && joystick[2] - YAW <= -50.00) {
+         Serial.println("analogWirte(6, 250)");
+          Serial.println("analogWirte(10, 75)");
+          Serial.println("analogWirte(9, 250)");
+          Serial.println("analogWirte(5, 75)");
+       }
+       else if (joystick[2] - YAW <= 30.00 && joystick[2] - YAW >= 10.00) {
+         Serial.println("analogWirte(6, 25)");
+          Serial.println("analogWirte(10, 75)");
+          Serial.println("analogWirte(9, 25)");
+          Serial.println("analogWirte(5, 75)");
+       }
+        else if (joystick[2] - YAW <= 50.00 && joystick[2] - YAW >= 30.00) {
+         Serial.println("analogWirte(6, 50)");
+          Serial.println("analogWirte(10, 150)");
+          Serial.println("analogWirte(9, 50)");
+          Serial.println("analogWirte(5, 150)");
+       }
+       else if (joystick[2] - YAW <= 70.00 && joystick[2] - YAW >= 50.00) {
+          Serial.println("analogWirte(6, 75)");
+          Serial.println("analogWirte(10, 250)");
+          Serial.println("analogWirte(9, 75)");
+          Serial.println("analogWirte(5, 250)");
+       } // 드론 좌 우 수평 회전 속도 제어
+       
+        break;
+       case 1:
+        Serial.println("Stop!!");
+    }
+  }
+
+  /*double speedA = throttle + BalY + BalX + BalZ;  
+  double speedB = throttle - BalY + BalX - BalZ; 
+  double speedC = throttle - BalY - BalX + BalZ;
+  double speedD = throttle + BalY - BalX - BalZ;
+
+  int iSpeedA = constrain((int)speedA, 0, 250);
+  int iSpeedB = constrain((int)speedB, 0, 250);
+  int iSpeedC = constrain((int)speedC, 0, 250);
+  int iSpeedD = constrain((int)speedD, 0, 250);
+
+  analogWrite(6, iSpeedA);
+  analogWrite(10,iSpeedB);
+  analogWrite(9, iSpeedC);
+  analogWrite(5, iSpeedD);*/
+
+ //  static int cnt_loop;
+ //  cnt_loop ++;
+ //  if(cnt_loop%100 !=0) return;
+
+ //  Serial.print("GyY = "); Serial.print(GyY);
+ //  Serial.print("GyYD = "); Serial.print(GyYD);
+ //  Serial.print("GyYR = "); Serial.print(GyYR);
+ //  Serial.print("dt = "); Serial.print(dt, 6);
+ //  Serial.print("AngleY = "); Serial.print(AngleY);
+ //  Serial.print(" | BalY = "); Serial.print(BalY);
+ //  Serial.print("A = ");Serial.print(speedA);
+ //  Serial.print(" | B = ");Serial.print(speedB);
+ //  Serial.print(" | C = ");Serial.print(speedC);
+ //  Serial.print(" | D = ");Serial.print(speedD);
+ //  Serial.println();
+}
