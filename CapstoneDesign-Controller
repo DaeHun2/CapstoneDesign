@@ -5,10 +5,12 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 
-int Button = 3;
+int Stay = 3;
+int GoStop = 4;
 const double PITCH = 0.00;
 const double ROLL = 0.00;
 const double YAW = 0.00;
+int count = 0;
 
 RF24 radio(7, 8); // SPI 버스에 nRF24L01 라디오를 설정하기 위해 CE, CSN를 선언.
 const byte address[6] = "00001";
@@ -62,11 +64,12 @@ float pressure;
 float atm;
 float altitude;
 
-double joystick[5];
+double joystick[6];
 
 void setup()
 {
-    pinMode(Button,INPUT_PULLUP);
+    pinMode(Stay,INPUT_PULLUP);
+    pinMode(GoStop, INPUT_PULLUP);
     radio.begin();
   radio.openWritingPipe(address); //이전에 설정한 5글자 문자열인 데이터를 보낼 수신의 주소를 설정
   radio.setPALevel(RF24_PA_MIN); 
@@ -98,7 +101,6 @@ void loop()
     Wire.write(0x43);
     Wire.endTransmission(false);
     Wire.requestFrom(0x68,6,true);
-
     
     int16_t GyXH = Wire.read();  
     int16_t GyXL = Wire.read();
@@ -146,9 +148,14 @@ void loop()
    Serial.print("AngleY(ROLL) = "); Serial.print(AngleY);
    Serial.print(", ");
    Serial.print("AngleZ(YAW) = "); Serial.println(AngleZ);
+   if(digitalRead(Stay) == HIGH) {
+    AngleX = 0;
+    AngleY = 0;
+    AngleZ = 0;
+   }
 
-     
-    
+    getAccel_Data();
+    getGyro_Data();
     getCompassDate_calibrated(); // compass data has been calibrated here
     getHeading();               //before we use this function we should run 'getCompassDate_calibrated()' frist, so that we can get calibrated data ,then we can get correct angle .
     getTiltHeading();
@@ -226,25 +233,35 @@ void loop()
     else if (AngleZ - YAW <= 70.00 && AngleZ - YAW >= 50.00) {
       Serial.println("Turn Left - Speed 3");
     } // 드론 좌 우 수평 회전 속도 제어 
-    
-   
-    //if(digitalRead(Button) == LOW) {
-      joystick[0] = AngleX;
-      joystick[1] = AngleY;
-      joystick[2] = AngleZ;
-      joystick[3] = Mxyz[2];
-      joystick[4] = 0;
-      radio.write(joystick,sizeof(joystick));
-      
-    //}
-    /*else if (digitalRead(Button) == HIGH) {
-      joystick[4] = 1;
-      radio.write(joystick,sizeof(joystick));
-      
-    }*/
-    delay(100);
-}
 
+    if (digitalRead(GoStop) == HIGH) {
+          count++;
+          double btn = count%2;
+          joystick[5] = btn;
+          radio.write(joystick,sizeof(joystick));
+        }
+    while(count % 2 != 0) {
+        if(digitalRead(Stay) == LOW) {
+         joystick[0] = AngleX;
+         joystick[1] = AngleY;
+         joystick[2] = AngleZ;
+         joystick[3] = Mxyz[2];
+         joystick[4] = 0;
+         radio.write(joystick,sizeof(joystick));
+       }
+        else if (digitalRead(Stay) == HIGH) {
+          joystick[0] = AngleX;
+          joystick[1] = AngleY;
+          joystick[2] = AngleZ;
+          joystick[3] = Mxyz[2];
+          joystick[4] = 1;
+         radio.write(joystick,sizeof(joystick));
+        }
+    }
+      
+      
+delay(100);
+}
 
 void getHeading(void)
 {
@@ -320,7 +337,21 @@ void get_one_sample_date_mxyz()
     my_sample[2] = Mxyz[1];
     mz_sample[2] = Mxyz[2];
 }
+void getAccel_Data(void)
+{
+    accelgyro.getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
+    Axyz[0] = (double) ax / 16384;
+    Axyz[1] = (double) ay / 16384;
+    Axyz[2] = (double) az / 16384;
+}
+void getGyro_Data(void)
+{
+    accelgyro.getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
 
+    Gxyz[0] = (double) gx * 250 / 32768;
+    Gxyz[1] = (double) gy * 250 / 32768;
+    Gxyz[2] = (double) gz * 250 / 32768;
+}
 void getCompass_Data(void)
 {
     I2C_M.writeByte(MPU9150_RA_MAG_ADDRESS, 0x0A, 0x01); //enable the magnetometer
