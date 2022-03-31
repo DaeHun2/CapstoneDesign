@@ -5,7 +5,7 @@
 
 RF24 radio(7,8);
 const byte address[6] = "00001";
-double joystick[5];
+double joystick[6];
 const double PITCH = 0.00;
 const double ROLL = 0.00;
 const double YAW = 0.00;
@@ -102,6 +102,11 @@ void loop() {
 
   if (radio.available()) {
     radio.read(joystick, sizeof(joystick));
+
+    double pitch = joystick[0] - PITCH
+    double roll = joystick[1] - ROLL
+    double yaw = joystick[2] - YAW
+    
     int b = joystick[4];
     switch(b) {
       case 0:
@@ -116,130 +121,212 @@ void loop() {
         Serial.println(joystick[3]);
         Serial.print("Compass (Z) : ");
         Serial.println(joystick[4]);*/
-        if ((joystick[0] - PITCH <= 10.00 && joystick[0] - PITCH >= -10.00)
-        && (joystick[1] - PITCH <= 10.00 && AngleY - PITCH >= -10.00)
-        && (joystick[2] - YAW <= 10.00 && joystick[2] - YAW >= -10.00)) {
-          Serial.println("analogWirte(6, 25)");
-          Serial.println("analogWirte(10, 25)");
-          Serial.println("analogWirte(9, 25)");
-          Serial.println("analogWirte(5, 25)");
-        }
-       else if (joystick[0] - PITCH >= -30.00 && joystick[0] - PITCH <= -10.00) {
-          Serial.println("analogWirte(6, 25)");
-          Serial.println("analogWirte(10, 25)");
-          Serial.println("analogWirte(9, 75)");
-          Serial.println("analogWirte(5, 75)");
-        }
-       else if (joystick[0] - PITCH >= -50.00 && joystick[0] - PITCH <= -30.00) {
-        Serial.println("analogWirte(6, 50)");
-          Serial.println("analogWirte(10, 50)");
-          Serial.println("analogWirte(9, 150)");
-          Serial.println("analogWirte(5, 150)");
-       }
-       else if (joystick[0] - PITCH >= -70.00 && joystick[0] - PITCH <= -50.00) {
-         Serial.println("analogWirte(6, 75)");
-          Serial.println("analogWirte(10, 75)");
-          Serial.println("analogWirte(9, 250)");
-          Serial.println("analogWirte(5, 250)");
-        }
-       else if (joystick[0] - PITCH <= 30.00 && joystick[0] - PITCH >= 10.00) {
-          Serial.println("analogWirte(6, 75)");
-          Serial.println("analogWirte(10, 75)");
-          Serial.println("analogWirte(9, 25)");
-          Serial.println("analogWirte(5, 25)");
-       }
-       else if (joystick[0] - PITCH <= 50.00 && joystick[0] - PITCH >= 30.00) {
-         Serial.println("analogWirte(6, 150)");
-          Serial.println("analogWirte(10, 150)");
-          Serial.println("analogWirte(9, 50)");
-          Serial.println("analogWirte(5, 50)");
-       }
-        else if (joystick[0] - PITCH <= 70.00 && joystick[0] - PITCH >= 50.00) {
-          Serial.println("analogWirte(6, 250)");
-          Serial.println("analogWirte(10, 250)");
-          Serial.println("analogWirte(9, 75)");
-          Serial.println("analogWirte(5, 75)");
-        } // 드론 앞 뒤 움직임 속도 제어
+        if ((pitch <= 10.00 && pitch >= -10.00) && (roll <= 10.00 && roll >= -10.00)
+        && (yaw <= 10.00 && yaw >= -10.00)) {
+          analogWrite(6, 0);
+          analogWrite(10, 0);
+          analogWrite(9, 0);
+          analogWrite(5, 0);
+        } // 제자리 비행
 
-        else if (joystick[1] - ROLL >= -30.00 && joystick[1] - ROLL <= -10.00) {
-         Serial.println("analogWirte(6, 25)");
-          Serial.println("analogWirte(10, 75)");
-          Serial.println("analogWirte(9, 75)");
-          Serial.println("analogWirte(5, 25)");
-        }
-        else if (joystick[1] - ROLL >= -50.00 && joystick[1] - ROLL <= -30.00) {
-          Serial.println("analogWirte(6, 50)");
-          Serial.println("analogWirte(10, 150)");
-          Serial.println("analogWirte(9, 150)");
-          Serial.println("analogWirte(5, 50)");
+        // 드론 앞 뒤 움직임 속도 제어
+       else if (pitch >= -30.00 && pitch <= -10.00) {
+          analogWrite(6, 25);
+          analogWrite(10, 25);
+          analogWrite(9, 75);
+          analogWrite(5, 75);
+        } // 전진 속도 1단계
+        else if ((pitch >= -30.00 && pitch <= -10.00) && (roll >= -30.00 && roll <= -10.00)) {
+          analogWrite(6, 25);
+          analogWrite(10, 75);
+          analogWrite(9, 75);
+          analogWrite(5, 75);
+        }// 전진 + 좌측 방향 속도 1단계
+        else if ((pitch >= -30.00 && pitch <= -10.00) && (roll <= 30.00 && roll >= 10.00)) {
+          analogWrite(6, 75);
+          analogWrite(10, 25);
+          analogWrite(9, 75);
+          analogWrite(5, 75);
+        } // 전진 + 우측 방향 속도 1단계
+       else if (pitch >= -50.00 && pitch <= -30.00) {
+          analogWrite(6, 50);
+          analogWrite(10, 50);
+          analogWrite(9, 150);
+          analogWrite(5, 150);
+       } // 전진 속도 2단계
+       else if ((pitch >= -50.00 && pitch <= -30.00) && (roll >= -50.00 && roll <= -30.00)) {
+          analogWrite(6, 50);
+          analogWrite(10, 150);
+          analogWrite(9, 150);
+          analogWrite(5, 150);
+       } // 전진 + 좌측 방향 속도 2단계
+       else if ((pitch >= -50.00 && pitch <= -30.00) && (roll <= 50.00 && roll >= 30.00)) {
+          analogWrite(6, 150);
+          analogWrite(10, 50);
+          analogWrite(9, 150);
+          analogWrite(5, 150);
+       } // 전진 + 우측 방향 속도 2단계
+       else if (pitch >= -70.00 && pitch <= -50.00) {
+          analogWrite(6, 75);
+          analogWrite(10, 75);
+          analogWrite(9, 225);
+          analogWrite(5, 225);
+        } // 전진 속도 3단계
+        else if ((pitch >= -70.00 && pitch <= -50.00) && (roll >= -70.00 && roll <= -50.00)) {
+          analogWrite(6, 75);
+          analogWrite(10, 225);
+          analogWrite(9, 225);
+          analogWrite(5, 225);
+        } // 전진 + 좌측 방향 속도 3단계
+        else if ((pitch >= -70.00 && pitch <= -50.00) && (roll >= -70.00 && roll <= -50.00)) {
+          analogWrite(6, 225);
+          analogWrite(10, 75);
+          analogWrite(9, 225);
+          analogWrite(5, 225);
+        } // 전진 + 우측 방향 속도 3단계
+        
+       else if (pitch <= 30.00 && pitch >= 10.00) {
+          analogWrite(6, 75);
+          analogWrite(10, 75);
+          analogWrite(9, 25);
+          analogWrite(5, 25);
+       } // 후진 속도 1단계
+       else if ((pitch <= 30.00 && pitch >= 10.00) && (roll >= -30.00 && roll <= -10.00)) {
+          analogWrite(6, 75);
+          analogWrite(10, 75);
+          analogWrite(9, 75);
+          analogWrite(5, 25);
+       } // 후진 + 좌측 속도 1단계
+       else if ((pitch <= 30.00 && pitch >= 10.00) && (roll <= 30.00 && roll >= 10.00)) {
+          analogWrite(6, 75);
+          analogWrite(10, 75);
+          analogWrite(9, 25);
+          analogWrite(5, 75);
+       } // 후진 + 우측 속도 1단계
+       else if (pitch <= 50.00 && pitch >= 30.00) {
+           analogWrite(6, 150);
+          analogWrite(10, 150);
+          analogWrite(9, 50);
+          analogWrite(5, 50);
+       } //후진 속도 2단계
+       else if ((pitch <= 50.00 && pitch >= 30.00) && (roll >= -50.00 && roll <= -30.00)) {
+           analogWrite(6, 150);
+          analogWrite(10, 150);
+          analogWrite(9, 150);
+          analogWrite(5, 50);
+       } // 후진 + 좌측 방향 속도 2단계
+       else if ((pitch <= 50.00 && pitch >= 30.00) && (roll <= 50.00 && roll >= 30.00)) {
+           analogWrite(6, 150);
+          analogWrite(10, 150);
+          analogWrite(9, 50);
+          analogWrite(5, 150);
+       } // 후진 + 우측 방향 속도 2단계
+        else if (pitch <= 70.00 && pitch >= 50.00) {
+          analogWrite(6, 225);
+          analogWrite(10, 225);
+          analogWrite(9, 75);
+          analogWrite(5, 75);
+        } //후진 속도 3단계
+        else if ((pitch <= 70.00 && pitch >= 50.00) && (roll >= -70.00 && roll <= -50.00)) {
+          analogWrite(6, 225);
+          analogWrite(10, 225);
+          analogWrite(9, 225);
+          analogWrite(5, 75);
+        } //후진 + 좌측 방향 속도 3단계
+        else if ((pitch <= 70.00 && pitch >= 50.00) && (roll <= 70.00 && roll >= 50.00)) {
+          analogWrite(6, 225);
+          analogWrite(10, 225);
+          analogWrite(9, 75);
+          analogWrite(5, 225);
+        } //후진 + 우측 방향 속도 3단계
+        
+        // 드론 좌 우 움직임 속도 제어 
+        else if (roll >= -30.00 && roll <= -10.00) {
+          analogWrite(6, 25);
+          analogWrite(10, 75);
+          analogWrite(9, 75);
+          analogWrite(5, 25);
+        } // 드론 좌측 방향 속도 1단계
+        else if (roll >= -50.00 && roll <= -30.00) {
+          analogWrite(6, 50);
+          analogWrite(10, 150);
+          analogWrite(9, 150);
+          analogWrite(5, 50);
+       } // 드론 좌측 방향 속도 2단계
+        else if (roll >= -70.00 && roll <= -50.00) {
+          analogWrite(6, 75);
+          analogWrite(10, 225);
+          analogWrite(9, 225);
+          analogWrite(5, 75);
+       } // 드론 좌측 방향 속도 3단계
+        else if (roll <= 30.00 && roll >= 10.00) {
+          analogWrite(6, 75);
+          analogWrite(10, 25);
+          analogWrite(9, 25);
+          analogWrite(5, 75);
+       } // 드론 우측 방향 속도 1단계
+        else if (roll <= 50.00 && roll >= 30.00) {
+          analogWrite(6, 150);
+          analogWrite(10, 50);
+          analogWrite(9, 50);
+          analogWrite(5, 150);
+       } // 드론 우측 방향 속도 1단계
+        else if (roll <= 70.00 && roll >= 50.00) {
+          analogWrite(6, 225);
+          analogWrite(10, 75);
+          analogWrite(9, 75);
+          analogWrite(5, 225);
+        } // 드론 우측 방향 속도 1단계
+        
+        // 드론 좌 우 수평 회전 속도 제어
+       else if (yaw >= -40.00 && yaw <= -20.00) {
+          analogWrite(6, 75);
+          analogWrite(10, 25);
+          analogWrite(9, 75);
+          analogWrite(5, 25);
        }
-        else if (joystick[1] - ROLL >= -70.00 && joystick[1] - ROLL <= -50.00) {
-          Serial.println("analogWirte(6, 75)");
-          Serial.println("analogWirte(10, 250)");
-          Serial.println("analogWirte(9, 250)");
-          Serial.println("analogWirte(5, 75)");
+       else if (yaw >= -60.00 && yaw <= -40.00) {
+          analogWrite(6, 150);
+          analogWrite(10, 50);
+          analogWrite(9, 150);
+          analogWrite(5, 50);
        }
-        else if (joystick[1] - ROLL <= 30.00 && joystick[1] - ROLL >= 10.00) {
-         Serial.println("analogWirte(6, 75)");
-          Serial.println("analogWirte(10, 25)");
-          Serial.println("analogWirte(9, 25)");
-          Serial.println("analogWirte(5, 75)");
+       else if (yaw >= -80.00 && yaw <= -60.00) {
+          analogWrite(6, 225);
+          analogWrite(10, 75);
+          analogWrite(9, 225);
+          analogWrite(5, 75);
        }
-        else if (joystick[1] - ROLL <= 50.00 && joystick[1] - ROLL >= 30.00) {
-          Serial.println("analogWirte(6, 150)");
-          Serial.println("analogWirte(10, 50)");
-          Serial.println("analogWirte(9, 50)");
-          Serial.println("analogWirte(5, 150)");
+       else if (yaw <= 40.00 && yaw >= 20.00) {
+          analogWrite(6, 25);
+          analogWrite(10, 75);
+          analogWrite(9, 25);
+          analogWrite(5, 75);
        }
-        else if (joystick[1] - ROLL <= 70.00 && joystick[1] - ROLL >= 50.00) {
-          Serial.println("analogWirte(6, 250)");
-          Serial.println("analogWirte(10, 75)");
-          Serial.println("analogWirte(9, 75)");
-          Serial.println("analogWirte(5, 250)");
-        } // 드론 좌 우 움직임 속도 제어
-
-       else if (joystick[2] - YAW >= -30.00 && joystick[2] - YAW <= -10.00) {
-          Serial.println("analogWirte(6, 75)");
-          Serial.println("analogWirte(10, 25)");
-          Serial.println("analogWirte(9, 75)");
-          Serial.println("analogWirte(5, 25)");
+        else if (yaw <= 60.00 && yaw >= 40.00) {
+          analogWrite(6, 50);
+          analogWrite(10, 150);
+          analogWrite(9, 50);
+          analogWrite(5, 150);
        }
-       else if (joystick[2] - YAW >= -50.00 && joystick[2] - YAW <= -30.00) {
-         Serial.println("analogWirte(6, 150)");
-          Serial.println("analogWirte(10, 50)");
-          Serial.println("analogWirte(9, 150)");
-          Serial.println("analogWirte(5, 50)");
-       }
-       else if (joystick[2] - YAW >= -70.00 && joystick[2] - YAW <= -50.00) {
-         Serial.println("analogWirte(6, 250)");
-          Serial.println("analogWirte(10, 75)");
-          Serial.println("analogWirte(9, 250)");
-          Serial.println("analogWirte(5, 75)");
-       }
-       else if (joystick[2] - YAW <= 30.00 && joystick[2] - YAW >= 10.00) {
-         Serial.println("analogWirte(6, 25)");
-          Serial.println("analogWirte(10, 75)");
-          Serial.println("analogWirte(9, 25)");
-          Serial.println("analogWirte(5, 75)");
-       }
-        else if (joystick[2] - YAW <= 50.00 && joystick[2] - YAW >= 30.00) {
-         Serial.println("analogWirte(6, 50)");
-          Serial.println("analogWirte(10, 150)");
-          Serial.println("analogWirte(9, 50)");
-          Serial.println("analogWirte(5, 150)");
-       }
-       else if (joystick[2] - YAW <= 70.00 && joystick[2] - YAW >= 50.00) {
-          Serial.println("analogWirte(6, 75)");
-          Serial.println("analogWirte(10, 250)");
-          Serial.println("analogWirte(9, 75)");
-          Serial.println("analogWirte(5, 250)");
-       } // 드론 좌 우 수평 회전 속도 제어
-       
+       else if (yaw <= 80.00 && yaw - YAW >= 60.00) {
+          analogWrite(6, 75);
+          analogWrite(10, 225);
+          analogWrite(9, 75);
+          analogWrite(5, 225);
+       } 
         break;
+        
        case 1:
         Serial.println("Stop!!");
+        analogWrite(6, 25);
+        analogWrite(10, 25);
+        analogWrite(9, 25);
+        analogWrite(5, 25);
+        }
+       
     }
-  }
+  //}
 
   /*double speedA = throttle + BalY + BalX + BalZ;  
   double speedB = throttle - BalY + BalX - BalZ; 
