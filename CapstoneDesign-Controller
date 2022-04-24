@@ -64,7 +64,7 @@ float pressure;
 float atm;
 float altitude;
 
-double joystick[6];
+double joystick[7];
 
 void setup()
 {
@@ -170,9 +170,9 @@ void loop()
     Serial.println(Mxyz[2]);
     Serial.println();*/
 
-    if ((AngleX - PITCH <= 10.00 && AngleX - PITCH >= -10.00)
+    /*if ((AngleX - PITCH <= 10.00 && AngleX - PITCH >= -10.00)
     && (AngleY - PITCH <= 10.00 && AngleY - PITCH >= -10.00)
-    && (AngleZ - YAW <= 10.00 && AngleZ - YAW >= -10.00)) {
+    && (AngleZ - YAW <= 20.00 && AngleZ - YAW >= -20.00)) {
       Serial.println("PITCH : Stay");
       Serial.println("ROLL : Stay");
       Serial.println("YAW : Stay ");
@@ -232,21 +232,22 @@ void loop()
     }
     else if (AngleZ - YAW <= 70.00 && AngleZ - YAW >= 50.00) {
       Serial.println("Turn Left - Speed 3");
-    } // 드론 좌 우 수평 회전 속도 제어 
+    } // 드론 좌 우 수평 회전 속도 제어 */
 
-    if (digitalRead(GoStop) == HIGH) {
+    if (digitalRead(GoStop) == LOW) {
           count++;
-          double btn = count%2;
-          joystick[5] = btn;
-          radio.write(joystick,sizeof(joystick));
+          delay(500);
         }
-    while(count % 2 != 0) {
+        
+    if(count % 2 != 0) {
         if(digitalRead(Stay) == LOW) {
          joystick[0] = AngleX;
          joystick[1] = AngleY;
          joystick[2] = AngleZ;
          joystick[3] = Mxyz[2];
          joystick[4] = 0;
+         joystick[5] = count%2
+         joystick[6] = analogRead(A0);
          radio.write(joystick,sizeof(joystick));
        }
         else if (digitalRead(Stay) == HIGH) {
@@ -255,8 +256,14 @@ void loop()
           joystick[2] = AngleZ;
           joystick[3] = Mxyz[2];
           joystick[4] = 1;
+          joystick[5] = count%2
+          joystick[6] = analogRead(A0);
          radio.write(joystick,sizeof(joystick));
         }
+    }
+    else if(digitalRead(GoStop) == HIGH) {
+      joystick[5] = count%2;
+      radio.write(joystick,sizeof(joystick));
     }
       
       
