@@ -234,34 +234,38 @@ void loop()
       Serial.println("Turn Left - Speed 3");
     } // 드론 좌 우 수평 회전 속도 제어 */
 
+
+
     if (digitalRead(GoStop) == LOW) {
           count++;
           delay(500);
-        }
-        
+        }   
     if(count % 2 != 0) {
         if(digitalRead(Stay) == LOW) {
+          Serial.println("abc");
          joystick[0] = AngleX;
          joystick[1] = AngleY;
          joystick[2] = AngleZ;
          joystick[3] = Mxyz[2];
          joystick[4] = 0;
-         joystick[5] = count%2
+         joystick[5] = count%2;
          joystick[6] = analogRead(A0);
          radio.write(joystick,sizeof(joystick));
        }
         else if (digitalRead(Stay) == HIGH) {
+          Serial.println("def");
           joystick[0] = AngleX;
           joystick[1] = AngleY;
           joystick[2] = AngleZ;
           joystick[3] = Mxyz[2];
           joystick[4] = 1;
-          joystick[5] = count%2
+          joystick[5] = count%2;
           joystick[6] = analogRead(A0);
          radio.write(joystick,sizeof(joystick));
         }
     }
     else if(digitalRead(GoStop) == HIGH) {
+      Serial.println("h");
       joystick[5] = count%2;
       radio.write(joystick,sizeof(joystick));
     }
