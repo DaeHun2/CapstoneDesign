@@ -123,11 +123,11 @@ void loop() {
         Serial.print("Compass (Z) : ");
         Serial.println(joystick[4]);*/
         if ((pitch <= 10.00 && pitch >= -10.00) && (roll <= 10.00 && roll >= -10.00)
-        && (yaw <= 10.00 && yaw >= -10.00)) {
-          analogWrite(6, 25);
-          analogWrite(10, 25);
-          analogWrite(9, 25);
-          analogWrite(5, 25);
+        && (yaw <= 10.00 && yaw >= -10.00) && (altitude <= 800 && altitude > 550)) {
+          analogWrite(6, 50);
+          analogWrite(10, 50);
+          analogWrite(9, 50);
+          analogWrite(5, 50);
         } // 제자리 비행
 
         // 드론 앞 뒤 움직임 속도 제어
@@ -317,30 +317,30 @@ void loop() {
           analogWrite(5, 225);
        }
 
-        if (altitude <= 800 && altitude > 550) {
+        if (altitude <= 1023 && altitude > 800) {
           analogWrite(6, 100);
           analogWrite(10, 100);
           analogWrite(9, 100);
           analogWrite(5, 100);
-        } // 드론 고도 상승 속도 1단계
-        else if (altitude <= 1023 && altitude > 800) {
-          analogWrite(6, 125);
-          analogWrite(10, 125);
-          analogWrite(9, 125);
-          analogWrite(5, 125);
         } // 드론 고도 상승 속도 2단계
         else if (altitude < 400  && altitude >= 200) {
+          analogWrite(6, 25);
+          analogWrite(10, 25);
+          analogWrite(9, 25);
+          analogWrite(5, 25);
+        } // 드론 고도 하강 속도 1단계
+        else if (altitude < 200  && altitude >= 0) {
+          analogWrite(6, 0);
+          analogWrite(10, 0);
+          analogWrite(9, 0);
+          analogWrite(5, 0);
+        } // 드론 고도 하강 속도 2단계
+        else if (altitude <= 800 && altitude >=400) {
           analogWrite(6, 50);
           analogWrite(10, 50);
           analogWrite(9, 50);
           analogWrite(5, 50);
-        } // 드론 고도 하강 속도 1단계
-        else if (altitude < 200  && altitude >= 0) {
-          analogWrite(6, 20);
-          analogWrite(10, 20);
-          analogWrite(9, 20);
-          analogWrite(5, 20);
-        } // 드론 고도 하강 속도 2단계
+        }
        
         break;
         
